@@ -7,6 +7,7 @@ class Reader extends React.Component {
 
         this.getCensusInfo = this.getCensusInfo.bind(this)
         this.getElectionInfo = this.getElectionInfo.bind(this)
+        this.getElectionColor = this.getElectionColor.bind(this)
 
         this.state = {
             navigation: false,
@@ -16,7 +17,8 @@ class Reader extends React.Component {
             dem20: 0,
             rep20: 0,
             countyName: "",
-            stateName: ""
+            stateName: "",
+            isFiveSeconds: false
         }
     }
 
@@ -74,10 +76,66 @@ class Reader extends React.Component {
 
         if ("geolocation" in navigator) {
             this.setState({navigation: true});
-            this.interval = setInterval(() => this.getCensusInfo(), 5000)
+            this.interval = setInterval(() => this.getCensusInfo(), 1500)
         }
 
+        setTimeout(() => {this.setState({isFiveSeconds: true})}, 5000)
+
         this.getCensusInfo();
+    }
+
+    getElectionColor(amount) { // Negative for democrat win, positive for republican win
+        let backgroundColor = "";
+        let color = "";
+
+        if (amount <= 0) {
+            amount = amount * -1;
+
+            if (amount <= 1) {
+                backgroundColor = "#D3E7FF";
+            } else if (amount <= 4) {
+                backgroundColor = "#b9d7ff"
+            } else if (amount <= 8) {
+                backgroundColor = "#86b6f6"
+            } else if (amount <= 12) {
+                backgroundColor = "#4389e3"
+                color = "white"
+            } else if (amount <= 16) {
+                backgroundColor = "#1666cb"
+                color = "white"
+            } else if (amount <= 21) {
+                backgroundColor = "#0645b4"
+                color = "white"
+            } else {
+                backgroundColor = "#002B84"
+                color = "white"
+            }
+        } else {
+            if (amount <= 1) {
+                backgroundColor = "#ffccd0";
+            } else if (amount <= 4) {
+                backgroundColor = "#f2b3be"
+            } else if (amount <= 8) {
+                backgroundColor = "#e27f90"
+            } else if (amount <= 12) {
+                backgroundColor = "#cc2f4a"
+                color = "white"
+            } else if (amount <= 16) {
+                backgroundColor = "#d40000"
+                color = "white"
+            } else if (amount <= 21) {
+                backgroundColor = "#aa0000"
+                color = "white"
+            } else if (amount <= 30) {
+                backgroundColor = "#800000"
+                color = "white"
+            }
+        }
+
+        return {
+            backgroundColor: backgroundColor,
+            color: color
+        }
     }
 
     componentWillUnmount() {
@@ -93,78 +151,40 @@ class Reader extends React.Component {
                 <div><p>You're either on a device that doesn't support location or declined the request for location</p></div>
             );
         } else if (this.state.blockGroupFIPS === 0 || this.state.dem20 === 0) {
+            let addition = ""
+            if (this.state.isFiveSeconds) addition = <p>(This might be an error with the backend)</p>
+
             return (
-                <div><p>You are outside the United States.</p></div>
+                <div><p>Resolving connection to server...</p>{addition}</div>
             );
         } else {
 
             let demPercentage20 = (this.state.dem20 / (this.state.dem20 + this.state.rep20)) * 100
             let repPercentage20 = (this.state.rep20 / (this.state.dem20 + this.state.rep20)) * 100
 
-            var difference20 = Math.abs(demPercentage20 - repPercentage20)
+            let difference20 = repPercentage20 - demPercentage20
 
-            var result20 = ((demPercentage20 >= repPercentage20) ? "D" : "R") + "+" + (Math.round(difference20 * 100) / 100)
+            var result20 = ((difference20 <= 0) ? "D" : "R") + "+" + (Math.round(Math.abs(difference20) * 100) / 100)
 
             var demPercentage16 = (this.state.dem16 / (this.state.dem16 + this.state.rep16)) * 100
             var repPercentage16 = (this.state.rep16 / (this.state.dem16 + this.state.rep16)) * 100
 
-            var difference16 = Math.abs(demPercentage16 - repPercentage16)
+            var difference16 = repPercentage16 - demPercentage16
 
-            var result16 = ((demPercentage16 >= repPercentage16) ? "D" : "R") + "+" + (Math.round(difference16 * 100) / 100)
+            var result16 = ((difference16 <= 0) ? "D" : "R") + "+" + (Math.round(Math.abs(difference16) * 100) / 100)
 
-            let backgroundColor = "";
-            let color = "black";
-            if (demPercentage20 >= repPercentage20) {
-                if (difference20 <= 1) {
-                    backgroundColor = "#D3E7FF";
-                } else if (difference20 <= 4) {
-                    backgroundColor = "#b9d7ff"
-                } else if (difference20 <= 8) {
-                    backgroundColor = "#86b6f6"
-                } else if (difference20 <= 12) {
-                    backgroundColor = "#4389e3"
-                    color = "white"
-                } else if (difference20 <= 16) {
-                    backgroundColor = "#1666cb"
-                    color = "white"
-                } else if (difference20 <= 21) {
-                    backgroundColor = "#0645b4"
-                    color = "white"
-                } else {
-                    backgroundColor = "#002B84"
-                    color = "white"
-                }
-            } else {
-                if (difference20 <= 1) {
-                    backgroundColor = "#ffccd0";
-                } else if (difference20 <= 4) {
-                    backgroundColor = "#f2b3be"
-                } else if (difference20 <= 8) {
-                    backgroundColor = "#e27f90"
-                } else if (difference20 <= 12) {
-                    backgroundColor = "#cc2f4a"
-                    color = "white"
-                } else if (difference20 <= 16) {
-                    backgroundColor = "#d40000"
-                    color = "white"
-                } else if (difference20 <= 21) {
-                    backgroundColor = "#aa0000"
-                    color = "white"
-                } else if (difference20 <= 30) {
-                    backgroundColor = "#800000"
-                    color = "white"
-                }
-            }
+            let colors20 = this.getElectionColor(difference20)
+            let colors16 = this.getElectionColor(difference16)
 
-            document.body.style.backgroundColor = backgroundColor;
+            document.body.style.backgroundColor = colors20.backgroundColor;
 
             return (
-                <div style={{textAlign: "center", color: color}}>
-                    <h2>2020: {result20}<br />2016: {result16}</h2>
-                    <p>{this.state.countyName}, {this.state.stateName}</p>
-                    <p>{this.state.dem20}/{this.state.rep20}</p>
-                    <p>{this.state.dem16}/{this.state.rep16}</p>
-                    <p></p>
+                <div style={{textAlign: "center", color: colors20.color}}>
+                    <h2>2020: {result20}</h2>
+                    <h2 style={{backgroundColor: colors16.backgroundColor, color: colors16.color, padding: 10}}>2016: {result16}</h2>
+                    <p>{this.state.countyName}, {this.state.stateName}<br /></p>
+
+                    <p>This district shifted <b>{(Math.round(Math.abs(difference20 - difference16) * 100) / 100)}</b> points to the <b>{(difference20 <= difference16) ? "left" : "right"}</b> last election.</p>
                 </div>
             );
 
