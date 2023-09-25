@@ -52,7 +52,7 @@ class Reader extends React.Component {
 
         const that = this;
 
-        var request = "https://" + this.serverURL + "/electiondata?blockfips=" + this.state.blockGroupFIPS + "&statecode=" + this.state.stateName
+        var request = "http://" + this.serverURL + "/electiondata?blockfips=" + this.state.blockGroupFIPS + "&statecode=" + this.state.stateName
 
         fetch(request)
             .then((response) => response.json())
@@ -72,7 +72,7 @@ class Reader extends React.Component {
     componentDidMount() {
 
 
-        this.serverURL = "how-did-they-vote.herokuapp.com"
+        this.serverURL = "5.161.86.174:5000"
 
         if ("geolocation" in navigator) {
             this.setState({navigation: true});
